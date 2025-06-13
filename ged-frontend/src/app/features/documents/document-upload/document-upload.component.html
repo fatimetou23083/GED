@@ -1,0 +1,188 @@
+<!-- src/app/features/documents/document-upload/document-upload.component.html - VERSION COMPLÈTE -->
+<div class="document-upload-container">
+  <!-- ✅ Header avec navigation -->
+  <div class="page-header">
+    <button mat-icon-button (click)="cancel()" class="back-button">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1 class="page-title">
+      <mat-icon>cloud_upload</mat-icon>
+      <span>Uploader un nouveau document</span>
+    </h1>
+  </div>
+
+  <!-- ✅ Formulaire complet -->
+  <form [formGroup]="uploadForm" (ngSubmit)="uploadDocument()" class="upload-form">
+    
+    <!-- ✅ Section sélection fichier -->
+    <mat-card class="upload-section">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>attach_file</mat-icon>
+          Sélectionner un fichier
+        </mat-card-title>
+        <mat-card-subtitle>
+          Formats supportés: PDF, Word, Excel, PowerPoint, Images (max 50MB)
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <!-- Zone de dépôt/sélection -->
+        <div class="file-zone" 
+             [class.has-file]="selectedFile"
+             (click)="openFileDialog()"
+             (dragover)="$event.preventDefault()"
+             (drop)="$event.preventDefault()">
+          
+          <!-- État vide -->
+          <div *ngIf="!selectedFile" class="no-file">
+            <mat-icon class="upload-icon">cloud_upload</mat-icon>
+            <h3>Cliquez pour choisir un fichier</h3>
+            <p>ou glissez-déposez un fichier ici</p>
+            <small>PDF, DOC, XLS, PPT, Images (max 50MB)</small>
+          </div>
+
+          <!-- Fichier sélectionné -->
+          <div *ngIf="selectedFile" class="file-selected">
+            <div class="file-info">
+              <mat-icon class="file-icon">{{ getFileIcon(selectedFile.name) }}</mat-icon>
+              <div class="file-details">
+                <h4>{{ selectedFile.name }}</h4>
+                <p>{{ formatFileSize(selectedFile.size) }}</p>
+              </div>
+            </div>
+            <button type="button" 
+                    mat-icon-button 
+                    (click)="resetFileInput(); $event.stopPropagation()"
+                    class="remove-file">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Input caché -->
+        <input type="file"
+               id="fileInput"
+               hidden
+               (change)="onFileSelected($event)"
+               accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png">
+      </mat-card-content>
+    </mat-card>
+
+    <!-- ✅ Section informations document -->
+    <mat-card class="info-section">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>info</mat-icon>
+          Informations du document
+        </mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="form-fields">
+          
+          <!-- Titre -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Titre du document *</mat-label>
+            <input matInput 
+                   formControlName="title" 
+                   placeholder="Entrez le titre du document"
+                   maxlength="255">
+            <mat-hint>Minimum 3 caractères</mat-hint>
+            <mat-error *ngIf="uploadForm.get('title')?.hasError('required')">
+              Le titre est requis
+            </mat-error>
+            <mat-error *ngIf="uploadForm.get('title')?.hasError('minlength')">
+              Le titre doit contenir au moins 3 caractères
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Description -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Description</mat-label>
+            <textarea matInput 
+                      formControlName="description"
+                      placeholder="Décrivez le contenu du document..."
+                      rows="4"
+                      maxlength="1000"></textarea>
+            <mat-hint>Optionnel - Maximum 1000 caractères</mat-hint>
+          </mat-form-field>
+
+          <!-- Ligne avec catégorie et statut -->
+          <div class="form-row">
+            <!-- Catégorie -->
+            <mat-form-field class="half-width" appearance="outline">
+              <mat-label>Catégorie *</mat-label>
+              <mat-select formControlName="category_id">
+                <mat-option value="">Choisir une catégorie</mat-option>
+                <mat-option *ngFor="let category of categories" [value]="category.id">
+                  {{ category.name }}
+                </mat-option>
+              </mat-select>
+              <mat-error *ngIf="uploadForm.get('category_id')?.hasError('required')">
+                Veuillez sélectionner une catégorie
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Statut -->
+            <mat-form-field class="half-width" appearance="outline">
+              <mat-label>Statut</mat-label>
+              <mat-select formControlName="status">
+                <mat-option value="DRAFT">Brouillon</mat-option>
+                <mat-option value="PUBLISHED">Publié</mat-option>
+                <mat-option value="ARCHIVED">Archivé</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- ✅ Barre de progression -->
+    <mat-card *ngIf="uploading" class="progress-section">
+      <mat-card-content>
+        <div class="upload-progress">
+          <div class="progress-header">
+            <mat-icon>file_upload</mat-icon>
+            <span>Upload en cours...</span>
+            <span class="progress-percent">{{ uploadProgress }}%</span>
+          </div>
+          <mat-progress-bar mode="indeterminate" color="primary"></mat-progress-bar>
+          <small>Veuillez patienter pendant l'upload du fichier</small>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- ✅ Actions -->
+    <div class="actions-section">
+      <div class="actions-buttons">
+        <button type="button" 
+                mat-stroked-button 
+                (click)="cancel()" 
+                [disabled]="uploading"
+                class="cancel-btn">
+          <mat-icon>close</mat-icon>
+          Annuler
+        </button>
+
+        <button type="button" 
+                mat-stroked-button 
+                (click)="resetForm()" 
+                [disabled]="uploading"
+                class="reset-btn">
+          <mat-icon>refresh</mat-icon>
+          Réinitialiser
+        </button>
+
+        <button type="submit"
+                mat-raised-button
+                color="primary"
+                [disabled]="!canUpload() || uploading"
+                class="upload-btn">
+          <mat-icon>{{ uploading ? 'hourglass_empty' : 'cloud_upload' }}</mat-icon>
+          <span>{{ uploading ? 'Upload en cours...' : 'Uploader le document' }}</span>
+        </button>
+      </div>
+    </div>
+  </form>
+</div>

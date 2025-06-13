@@ -1,0 +1,22 @@
+# node modules
+node_modules/
+dist/
+.env
+
+# log files
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+$Recycle.Bin/
+Desktop.ini
+
+# IDEs
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo

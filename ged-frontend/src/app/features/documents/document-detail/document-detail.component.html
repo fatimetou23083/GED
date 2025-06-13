@@ -1,0 +1,78 @@
+<!-- 📄 document-detail.component.html -->
+<div class="document-detail">
+  <button mat-button (click)="goBack()">
+    <mat-icon>arrow_back</mat-icon> Retour
+  </button>
+
+  <h2 *ngIf="document">
+    <mat-icon>description</mat-icon>
+    {{ document.title }}
+  </h2>
+
+  <mat-card *ngIf="document">
+    <mat-card-title>Détails</mat-card-title>
+    <mat-card-content>
+      <p><strong>Description :</strong> {{ document.description || 'N/A' }}</p>
+      <p><strong>Catégorie :</strong> {{ document.category_name || 'Inconnue' }}</p>
+      <p><strong>Statut :</strong> {{ document.status }}</p>
+      <p><strong>Créateur :</strong> {{ document.creator_name }}</p>
+      <p><strong>Date de création :</strong> {{ document.created_at | date }}</p>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- 📥 Versions -->
+  <mat-card *ngIf="versions.length">
+    <mat-card-title>Versions</mat-card-title>
+    <mat-card-content>
+      <table mat-table [dataSource]="versions" class="mat-elevation-z1">
+        <ng-container matColumnDef="version">
+          <th mat-header-cell *matHeaderCellDef>Version</th>
+          <td mat-cell *matCellDef="let v">{{ v.version_number }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="created_by">
+          <th mat-header-cell *matHeaderCellDef>Créé par</th>
+          <td mat-cell *matCellDef="let v">{{ v.creator_name || 'N/A' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="created_at">
+          <th mat-header-cell *matHeaderCellDef>Date</th>
+          <td mat-cell *matCellDef="let v">{{ v.created_at | date:'short' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let v">
+            <button mat-icon-button (click)="downloadVersion(v.id)" title="Télécharger">
+              <mat-icon>download</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="['version', 'created_by', 'created_at', 'actions']"></tr>
+        <tr mat-row *matRowDef="let row; columns: ['version', 'created_by', 'created_at', 'actions']"></tr>
+      </table>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- 🏷️ Métadonnées -->
+  <mat-card *ngIf="metadata.length">
+    <mat-card-title>Métadonnées</mat-card-title>
+    <mat-card-content>
+      <table mat-table [dataSource]="metadata" class="mat-elevation-z1">
+        <ng-container matColumnDef="key">
+          <th mat-header-cell *matHeaderCellDef>Clé</th>
+          <td mat-cell *matCellDef="let m">{{ m.key }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="value">
+          <th mat-header-cell *matHeaderCellDef>Valeur</th>
+          <td mat-cell *matCellDef="let m">{{ m.value_text }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="['key', 'value']"></tr>
+        <tr mat-row *matRowDef="let row; columns: ['key', 'value']"></tr>
+      </table>
+    </mat-card-content>
+  </mat-card>
+</div>
