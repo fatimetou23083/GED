@@ -1,40 +1,34 @@
-"""
-URL configuration for gesArcEle project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
+# gesArcEle/urls.py - VERSION CORRIGÉE
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.authtoken.views import obtain_auth_token
-from rest_framework.authtoken import views as auth_token_views
 
 urlpatterns = [
+    # Administration Django
     path('admin/', admin.site.urls),
-    path('api/', include('archive.urls')),
-    path('api/',include('users.urls')),
-    path('api/',include('Catalog.urls')),
-    path('api/',include('documents.urls')),
-    path('api/',include('permissions.urls')),
-    path('api/',include('Tagger.urls')),
-    path('api/',include('commentaires.urls')),
-    path('api/token/', obtain_auth_token),
+    
+    # Authentification
+    path('api/auth/token/', obtain_auth_token, name='api_token_auth'),
+    
+    # APIs des applications
+    path('api/archive/', include('archive.urls')),
+    path('api/users/', include('users.urls')),
+    path('api/catalog/', include('Catalog.urls')),
+    path('api/documents/', include('documents.urls')),
+    path('api/permissions/', include('permissions.urls')),
+    path('api/tags/', include('Tagger.urls')),
+    path('api/comments/', include('commentaires.urls')),
+    path('api/cabinets/', include('cabinets.urls')),
+    path('api/metadata/', include('metadata.urls')),
+    path('api/workflows/', include('workflows.urls')),
+    path('api/messaging/', include('messaging.urls')),
+    path('api/indexing/', include('indexing.urls')),
+    path('api/settings/', include('settings.urls')),
 ]
 
-# Serve media files in development
+# Servir les fichiers media et static en développement
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    # Ajout des URLs pour servir les fichiers statiques en développement
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

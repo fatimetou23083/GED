@@ -44,6 +44,12 @@ INSTALLED_APPS = [
     'Tagger',
     'permissions',
     'Catalog',
+    'cabinets',
+    'metadata',
+    'workflows', 
+    'messaging',
+    'indexing',
+    'settings',
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
@@ -114,7 +120,7 @@ CORS_ALLOW_HEADERS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'gesae',
+        'NAME': 'ged',
         'USER':'root',
         'PASSWORD':'',
         'HOST':'localhost',

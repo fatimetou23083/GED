@@ -1,13 +1,13 @@
-# users/serializers.py - Version corrigée complète
+# users/serializers.py - VERSION SIMPLE POUR ÉVITER LES ERREURS
 from rest_framework import serializers
 from .models import User, Profile
 
 class UserSerializer(serializers.ModelSerializer):
-    """Sérialiseur pour les utilisateurs"""
+    """Sérialiseur simple pour les utilisateurs"""
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_active']
-        read_only_fields = ['id', 'is_active', 'is_superuser']
+        read_only_fields = ['id', 'is_active']
 
 class UserLoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
@@ -42,8 +42,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['id', 'user_id', 'avatar', 'job_title', 'department']
-        read_only_fields = ['id', 'user_id']
+        fields = ['id', 'user', 'avatar', 'job_title', 'department']
+        read_only_fields = ['id']
 
 class UserWithProfileSerializer(serializers.ModelSerializer):
     """Sérialiseur pour les utilisateurs avec leurs profils"""

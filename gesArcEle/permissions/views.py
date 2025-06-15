@@ -1,48 +1,52 @@
+# permissions/views.py - النسخة المصححة الكاملة
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Permission
 from .serializers import PermissionSerializer
-from documents.models import Document  # Import supplémentaire
-class PermissionViewSet(viewsets.ModelViewSet):
+
+class DocumentPermissionViewSet(viewsets.ModelViewSet):
     """
-    API endpoint pour gérer les permissions des documents
+    API endpoint لإدارة صلاحيات المستندات
     """
     queryset = Permission.objects.all()
     serializer_class = PermissionSerializer
     permission_classes = [permissions.IsAuthenticated]
     
-    @action(detail=False, methods=['get'])
-    def by_document(self, request):
-        """Permissions pour un document spécifique"""
-        document_id = request.query_params.get('document_id')
-        if not document_id:
-            return Response({"error": "Le paramètre document_id est requis"}, 
-                           status=status.HTTP_400_BAD_REQUEST)
+    def get_queryset(self):
+        """تصفية الصلاحيات حسب المعايير"""
+        queryset = Permission.objects.all()
         
-        perms = Permission.objects.filter(document_id=document_id)
-        serializer = self.get_serializer(perms, many=True)
-        return Response(serializer.data)
+        # تصفية حسب المستند
+        document_id = self.request.query_params.get('document_id')
+        if document_id:
+            queryset = queryset.filter(document_id=document_id)
+        
+        # تصفية حسب المستخدم
+        user_id = self.request.query_params.get('user_id')
+        if user_id:
+            queryset = queryset.filter(user_id=user_id)
+        
+        # تصفية حسب نوع الصلاحية
+        permission_type = self.request.query_params.get('permission_type')
+        if permission_type:
+            queryset = queryset.filter(permission_type=permission_type)
+        
+        return queryset
     
-    @action(detail=False, methods=['get'])
-    def my_permissions(self, request):
-        """Permissions de l'utilisateur connecté"""
-        perms = Permission.objects.filter(user_id=request.user)
-        serializer = self.get_serializer(perms, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def check_permission(self, request):
-        """Vérifie si un utilisateur a une permission spécifique sur un document"""
+    @action(detail=False, methods=['GET'])
+    def check(self, request):
+        """التحقق من صلاحية معينة"""
         document_id = request.query_params.get('document_id')
         permission_type = request.query_params.get('permission_type')
         user_id = request.query_params.get('user_id', request.user.id)
         
         if not document_id or not permission_type:
-            return Response({"error": "Les paramètres document_id et permission_type sont requis"}, 
-                           status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': 'document_id و permission_type مطلوبان'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         has_permission = Permission.objects.filter(
             document_id=document_id,
@@ -50,84 +54,137 @@ class PermissionViewSet(viewsets.ModelViewSet):
             permission_type=permission_type
         ).exists()
         
-        return Response({"has_permission": has_permission})
+        return Response({
+            'has_permission': has_permission,
+            'document_id': document_id,
+            'user_id': user_id,
+            'permission_type': permission_type
+        })
     
-    @action(detail=False, methods=['post'])
-    def grant_permission(self, request):
-        """Accorde une permission à un utilisateur sur un document"""
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            # Vérifie si l'utilisateur actuel est autorisé à accorder cette permission
-            document_id = serializer.validated_data['document_id']
-            
-            # Vérifie si l'utilisateur est le créateur ou a des droits admin
-            from documents.models import Document
-            document = get_object_or_404(Document, id=document_id)
-            
-            if document.creator_id != request.user:
-                admin_rights = Permission.objects.filter(
-                    document_id=document_id,
-                    user_id=request.user,
-                    permission_type='ADMIN'
-                ).exists()
-                
-                if not admin_rights:
-                    return Response({"error": "Vous n'avez pas les droits pour accorder cette permission"}, 
-                                   status=status.HTTP_403_FORBIDDEN)
-            
-            # Vérifie si la permission existe déjà
-            document_id = serializer.validated_data['document_id']
-            user_id = serializer.validated_data['user_id']
-            permission_type = serializer.validated_data['permission_type']
-            
-            exists = Permission.objects.filter(
-                document_id=document_id,
-                user_id=user_id,
-                permission_type=permission_type
-            ).exists()
-            
-            if exists:
-                return Response({"message": "Cette permission existe déjà"}, 
-                               status=status.HTTP_200_OK)
-            
-            serializer.save(granted_at=timezone.now())
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=False, methods=['delete'])
-    def revoke_permission(self, request):
-        """Révoque une permission"""
-        document_id = request.query_params.get('document_id')
-        user_id = request.query_params.get('user_id')
-        permission_type = request.query_params.get('permission_type')
+    @action(detail=False, methods=['POST'])
+    def bulk_assign(self, request):
+        """إسناد صلاحيات متعددة"""
+        document_id = request.data.get('document_id')
+        permissions_data = request.data.get('permissions', [])
         
-        if not all([document_id, user_id, permission_type]):
-            return Response({"error": "Tous les paramètres sont requis"}, 
-                           status=status.HTTP_400_BAD_REQUEST)
-        
-        # Vérifie si l'utilisateur actuel est autorisé à révoquer cette permission
-        document = get_object_or_404(Document, id=document_id)
-        
-        if document.creator_id != request.user:
-            admin_rights = Permission.objects.filter(
-                document_id=document_id,
-                user_id=request.user,
-                permission_type='ADMIN'
-            ).exists()
-            
-            if not admin_rights:
-                return Response({"error": "Vous n'avez pas les droits pour révoquer cette permission"}, 
-                               status=status.HTTP_403_FORBIDDEN)
+        if not document_id or not permissions_data:
+            return Response(
+                {'error': 'document_id و permissions مطلوبان'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         try:
-            permission = Permission.objects.get(
-                document_id=document_id,
-                user_id=user_id,
-                permission_type=permission_type
+            # استيراد محلي لتجنب المشاكل الدائرية
+            from documents.models import Document
+            from users.models import User
+            
+            document = Document.objects.get(id=document_id)
+        except ImportError:
+            return Response(
+                {'error': 'خطأ في النظام'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-            permission.delete()
-            return Response({"message": "Permission révoquée avec succès"}, 
-                           status=status.HTTP_200_OK)
-        except Permission.DoesNotExist:
-            return Response({"error": "Cette permission n'existe pas"}, 
-                           status=status.HTTP_404_NOT_FOUND)
+        except Document.DoesNotExist:
+            return Response(
+                {'error': 'المستند غير موجود'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        created_permissions = []
+        
+        for perm_data in permissions_data:
+            user_id = perm_data.get('user_id')
+            permission_type = perm_data.get('permission_type')
+            
+            if user_id and permission_type:
+                try:
+                    user = User.objects.get(id=user_id)
+                    permission, created = Permission.objects.get_or_create(
+                        document=document,
+                        user=user,
+                        permission_type=permission_type
+                    )
+                    
+                    if created:
+                        created_permissions.append(permission)
+                        
+                except User.DoesNotExist:
+                    continue
+        
+        return Response({
+            'message': f'تم إنشاء {len(created_permissions)} صلاحية',
+            'created_count': len(created_permissions)
+        })
+    
+    @action(detail=False, methods=['DELETE'])
+    def bulk_remove(self, request):
+        """حذف صلاحيات متعددة"""
+        document_id = request.data.get('document_id')
+        user_ids = request.data.get('user_ids', [])
+        permission_type = request.data.get('permission_type')
+        
+        if not document_id:
+            return Response(
+                {'error': 'document_id مطلوب'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        filters = {'document_id': document_id}
+        
+        if user_ids:
+            filters['user_id__in'] = user_ids
+        
+        if permission_type:
+            filters['permission_type'] = permission_type
+        
+        deleted_count = Permission.objects.filter(**filters).delete()[0]
+        
+        return Response({
+            'message': f'تم حذف {deleted_count} صلاحية',
+            'deleted_count': deleted_count
+        })
+    
+    @action(detail=False, methods=['GET'])
+    def my_permissions(self, request):
+        """صلاحيات المستخدم الحالي"""
+        permissions = Permission.objects.filter(user=request.user)
+        
+        document_id = request.query_params.get('document_id')
+        if document_id:
+            permissions = permissions.filter(document_id=document_id)
+        
+        serializer = self.get_serializer(permissions, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['GET'])
+    def by_document(self, request):
+        """جميع صلاحيات مستند معين"""
+        document_id = request.query_params.get('document_id')
+        
+        if not document_id:
+            return Response(
+                {'error': 'document_id مطلوب'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        permissions = Permission.objects.filter(document_id=document_id)
+        serializer = self.get_serializer(permissions, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['GET'])
+    def stats(self, request):
+        """إحصائيات الصلاحيات"""
+        from django.db.models import Count
+        
+        stats = {
+            'total_permissions': Permission.objects.count(),
+            'permissions_by_type': dict(
+                Permission.objects.values('permission_type').annotate(
+                    count=Count('id')
+                ).values_list('permission_type', 'count')
+            ),
+            'users_with_permissions': Permission.objects.values('user').distinct().count(),
+            'documents_with_permissions': Permission.objects.values('document').distinct().count(),
+        }
+        
+        return Response(stats)

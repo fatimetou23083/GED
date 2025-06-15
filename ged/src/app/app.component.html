@@ -1,0 +1,199 @@
+<!-- app.component.html COMPLET -->
+<div class="app-layout">
+  <!-- SIDEBAR AVEC HEADER COMPATIBLE -->
+  <div class="sidebar-container" [ngClass]="{'sidebar-hidden': !sidebarOpen}">
+    
+    <!-- Header sidebar AVEC BOUTON DE FERMETURE -->
+    <div class="sidebar-header">
+      <div class="sidebar-header-content">
+        <div class="logo-container">
+          <div class="logo-icon">
+            <span>📄</span>
+          </div>
+          <div class="logo-text">
+            <div class="logo-title">Mayan EDMS</div>
+            <div class="logo-subtitle">Documentation</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- BOUTON DE FERMETURE À L'INTÉRIEUR DE LA SIDEBAR -->
+      <button 
+        (click)="toggleSidebar()"
+        class="sidebar-close-btn"
+        type="button"
+        [attr.aria-label]="'Fermer le menu'">
+        <div class="close-icon">
+          <span></span>
+          <span></span>
+        </div>
+      </button>
+    </div>
+
+    <!-- Section title -->
+    <div class="sidebar-section-header">
+      <div class="section-title">Sections du Guide</div>
+      <div class="section-divider"></div>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+      <a routerLink="/summary" routerLinkActive="router-link-active" (click)="closeSidebarOnMobile()" class="nav-item">
+        <div class="nav-icon nav-icon-blue">📊</div>
+        <div class="nav-content">
+          <span class="nav-title">Vue d'ensemble</span>
+          <span class="nav-subtitle">Synthèse générale</span>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a routerLink="/documents" routerLinkActive="router-link-active" (click)="closeSidebarOnMobile()" class="nav-item">
+        <div class="nav-icon nav-icon-blue">📄</div>
+        <div class="nav-content">
+          <span class="nav-title">Documents</span>
+          <span class="nav-subtitle">Gestion des fichiers</span>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a routerLink="/cabinets" routerLinkActive="router-link-active" (click)="closeSidebarOnMobile()" class="nav-item">
+        <div class="nav-icon nav-icon-green">🗄️</div>
+        <div class="nav-content">
+          <span class="nav-title">Cabinets</span>
+          <span class="nav-subtitle">Organisation hiérarchique</span>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a routerLink="/metadata" routerLinkActive="router-link-active" (click)="closeSidebarOnMobile()" class="nav-item">
+        <div class="nav-icon nav-icon-purple">🏷️</div>
+        <div class="nav-content">
+          <span class="nav-title">Métadonnées</span>
+          <span class="nav-subtitle">Classification et types</span>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a routerLink="/index" routerLinkActive="router-link-active" (click)="closeSidebarOnMobile()" class="nav-item">
+        <div class="nav-icon nav-icon-purple">📇</div>
+        <div class="nav-content">
+          <span class="nav-title">Index</span>
+          <span class="nav-subtitle">Indexation et recherche</span>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a routerLink="/tags" routerLinkActive="router-link-active" (click)="closeSidebarOnMobile()" class="nav-item">
+        <div class="nav-icon nav-icon-yellow">🏷️</div>
+        <div class="nav-content">
+          <span class="nav-title">Tags</span>
+          <span class="nav-subtitle">Étiquetage flexible</span>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a routerLink="/workflows" routerLinkActive="router-link-active" (click)="closeSidebarOnMobile()" class="nav-item">
+        <div class="nav-icon nav-icon-indigo">⚡</div>
+        <div class="nav-content">
+          <span class="nav-title">Workflows</span>
+          <span class="nav-subtitle">Processus automatisés</span>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a routerLink="/permissions" routerLinkActive="router-link-active" (click)="closeSidebarOnMobile()" class="nav-item">
+        <div class="nav-icon nav-icon-red">🔐</div>
+        <div class="nav-content">
+          <span class="nav-title">Permissions</span>
+          <span class="nav-subtitle">Sécurité et accès</span>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a routerLink="/search" routerLinkActive="router-link-active" (click)="closeSidebarOnMobile()" class="nav-item">
+        <div class="nav-icon nav-icon-amber">🔍</div>
+        <div class="nav-content">
+          <span class="nav-title">Recherches</span>
+          <span class="nav-subtitle">Indexation avancée</span>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a routerLink="/messaging" routerLinkActive="router-link-active" (click)="closeSidebarOnMobile()" class="nav-item">
+        <div class="nav-icon nav-icon-teal">💬</div>
+        <div class="nav-content">
+          <span class="nav-title">Messagerie</span>
+          <span class="nav-subtitle">Communication interne</span>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a routerLink="/settings" routerLinkActive="router-link-active" (click)="closeSidebarOnMobile()" class="nav-item">
+        <div class="nav-icon nav-icon-gray">⚙️</div>
+        <div class="nav-content">
+          <span class="nav-title">Paramétrage</span>
+          <span class="nav-subtitle">Configuration globale</span>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+    </nav>
+
+    <!-- Footer sidebar -->
+    <div class="sidebar-footer">
+      <div class="footer-stats">
+        <div class="stat-item">
+          <span class="stat-number">11</span>
+          <span class="stat-label">Modules</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">100%</span>
+          <span class="stat-label">Couverture</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay pour mobile -->
+  <div 
+    *ngIf="sidebarOpen" 
+    class="sidebar-overlay"
+    (click)="toggleSidebar()">
+  </div>
+
+  <!-- CONTENU PRINCIPAL -->
+  <div class="main-container" [ngClass]="{'sidebar-closed': !sidebarOpen}">
+    <!-- Header principal AVEC BOUTON D'OUVERTURE -->
+    <header class="main-header">
+      <div class="header-content">
+        
+        <!-- BOUTON D'OUVERTURE (visible quand sidebar fermée) -->
+        <button 
+          *ngIf="!sidebarOpen"
+          (click)="toggleSidebar()"
+          class="header-open-btn"
+          type="button"
+          [attr.aria-label]="'Ouvrir le menu'">
+          <div class="hamburger-icon">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </button>
+        
+        <div class="header-icon">
+          <span>📄</span>
+        </div>
+        <div class="header-text">
+          <h1>Guide Mayan EDMS</h1>
+          <p class="header-subtitle">Système de Gestion Électronique de Documents</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Zone de contenu -->
+    <main class="main-content fade-in">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

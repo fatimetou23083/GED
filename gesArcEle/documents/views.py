@@ -1,27 +1,44 @@
-# documents/views.py - MÉTHODE CREATE COMPLÈTE ET CORRIGÉE
+# documents/views.py - CORRECTION DES NOMS DE MÉTHODES
 import os
-import mimetypes
+import hashlib
+from datetime import datetime, timedelta
 from django.conf import settings
-from django.http import FileResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.db.models import Q, Count, Sum
 from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.parsers import MultiPartParser, FormParser
-from Catalog.models import Category  
-from documents.models import Document, DocumentVersion, Metadata
-from .serializers import DocumentSerializer, DocumentVersionSerializer, MetadataSerializer, DocumentDetailSerializer
+from django.core.files.storage import default_storage
+
+# Imports des modèles locaux
+from .models import Document, DocumentVersion, DocumentAccess, Metadata, SearchIndex, DocumentType
+
+# Imports des serializers
+from .serializers import DocumentSerializer, DocumentDetailSerializer, DocumentVersionSerializer
+
+# Imports des autres modèles (avec protection contre les erreurs)
+try:
+    from Catalog.models import Category
+except ImportError:
+    from Catalog.models import Category
+
+try:
+    from users.models import User
+except ImportError:
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
 
 class DocumentViewSet(viewsets.ModelViewSet):
-    """Point d'entrée API pour gérer les documents"""
-    queryset = Document.objects.all()
+    """
+    ViewSet Document avec TOUTES les fonctionnalités
+    """
+    queryset = Document.objects.filter(is_deleted=False)
     serializer_class = DocumentSerializer
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser)
-
-    def get_queryset(self):
-        """Exclure les documents supprimés par défaut"""
-        return Document.objects.filter(is_deleted=False)
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -29,195 +46,128 @@ class DocumentViewSet(viewsets.ModelViewSet):
         return DocumentSerializer
 
     def perform_create(self, serializer):
-        """Associe l'utilisateur connecté comme créateur du document"""
+        """Associe l'utilisateur connecté comme créateur"""
         serializer.save(creator=self.request.user)
 
-    def create(self, request, *args, **kwargs):
-        """✅ CRÉER UN NOUVEAU DOCUMENT AVEC UPLOAD - VERSION COMPLÈTE"""
-        try:
-            print(f"📥 === DÉBUT UPLOAD ===")
-            print(f"📥 Headers: {dict(request.headers)}")
-            print(f"📥 Method: {request.method}")
-            print(f"📥 Content-Type: {request.content_type}")
-            print(f"📥 User: {request.user}")
-            print(f"📥 Data keys: {list(request.data.keys())}")
-            print(f"📥 Files keys: {list(request.FILES.keys())}")
-            
-            # ✅ 1. VALIDATION DES DONNÉES OBLIGATOIRES
-            title = request.data.get('title', '').strip()
-            if not title:
-                return Response(
-                    {"error": "Le titre est requis"}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            if len(title) < 3:
-                return Response(
-                    {"error": "Le titre doit contenir au moins 3 caractères"}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            category_id = request.data.get('category_id')
-            if not category_id:
-                return Response(
-                    {"error": "La catégorie est requise"}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # ✅ 2. VÉRIFICATION DE LA CATÉGORIE
-            try:
-                category_id = int(category_id)
-                category = Category.objects.get(id=category_id)
-                print(f"✅ Catégorie trouvée: {category.name}")
-            except (ValueError, Category.DoesNotExist):
-                return Response(
-                    {"error": f"Catégorie invalide: {category_id}"}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # ✅ 3. VÉRIFICATION DU FICHIER
-            if 'file' not in request.FILES:
-                return Response(
-                    {"error": "Aucun fichier fourni"}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            file_obj = request.FILES['file']
-            print(f"📎 Fichier reçu: {file_obj.name}")
-            print(f"📎 Taille: {file_obj.size} bytes")
-            print(f"📎 Type MIME: {file_obj.content_type}")
-            
-            # ✅ 4. VALIDATION DE LA TAILLE (50MB max)
-            max_size = 50 * 1024 * 1024  # 50MB
-            if file_obj.size > max_size:
-                return Response(
-                    {"error": f"Fichier trop volumineux ({file_obj.size} bytes). Maximum: 50MB"}, 
-                    status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
-                )
-            
-            # ✅ 5. VALIDATION DU TYPE MIME
-            allowed_types = [
-                'application/pdf',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'application/vnd.ms-powerpoint',
-                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                'image/jpeg',
-                'image/png',
-                'image/jpg'
-            ]
-            
-            file_mime_type = file_obj.content_type
-            if file_mime_type not in allowed_types:
-                # Vérification supplémentaire par extension si MIME non reconnu
-                file_ext = os.path.splitext(file_obj.name)[1].lower()
-                ext_to_mime = {
-                    '.pdf': 'application/pdf',
-                    '.doc': 'application/msword',
-                    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    '.xls': 'application/vnd.ms-excel',
-                    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    '.ppt': 'application/vnd.ms-powerpoint',
-                    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                    '.jpg': 'image/jpeg',
-                    '.jpeg': 'image/jpeg',
-                    '.png': 'image/png'
-                }
-                
-                if file_ext not in ext_to_mime:
-                    return Response(
-                        {"error": f"Type de fichier non supporté: {file_mime_type} (extension: {file_ext})"}, 
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                
-                # Utiliser le MIME type basé sur l'extension
-                file_mime_type = ext_to_mime[file_ext]
-                print(f"📎 Type MIME corrigé: {file_mime_type}")
-            
-            # ✅ 6. CRÉATION DU DOCUMENT
-            description = request.data.get('description', '').strip()
-            document_status = request.data.get('status', 'DRAFT')
-            
-            document = Document.objects.create(
-                title=title,
-                description=description,
-                category=category,
-                status=document_status,
-                creator=request.user
+    @action(detail=False, methods=['GET'])
+    def all(self, request):
+        """1.1 All Documents - CORRIGÉ LE NOM"""
+        documents = Document.objects.filter(is_deleted=False).order_by('-created_at')
+        
+        # Filtres optionnels
+        category_id = request.query_params.get('category_id')
+        if category_id:
+            documents = documents.filter(category_id=category_id)
+        
+        search = request.query_params.get('search')
+        if search:
+            documents = documents.filter(
+                Q(title__icontains=search) |
+                Q(description__icontains=search) |
+                Q(ocr_content__icontains=search)
             )
-            
-            print(f"✅ Document créé avec ID: {document.id}")
-            
-            # ✅ 7. SAUVEGARDE DU FICHIER
-            try:
-                # Créer le répertoire pour ce document
-                document_dir = os.path.join(settings.MEDIA_ROOT, 'documents', str(document.id))
-                os.makedirs(document_dir, exist_ok=True)
-                print(f"📁 Répertoire créé: {document_dir}")
-                
-                # Générer un nom de fichier sécurisé
-                file_ext = os.path.splitext(file_obj.name)[1]
-                safe_filename = f"document_{document.id}_v1{file_ext}"
-                file_path = os.path.join(document_dir, safe_filename)
-                relative_path = os.path.join('documents', str(document.id), safe_filename)
-                
-                # Écrire le fichier
-                with open(file_path, 'wb+') as destination:
-                    for chunk in file_obj.chunks():
-                        destination.write(chunk)
-                
-                print(f"💾 Fichier sauvegardé: {file_path}")
-                
-                # ✅ 8. CRÉER LA VERSION DU DOCUMENT
-                version = DocumentVersion.objects.create(
-                    document=document,
-                    version_number=1,
-                    file_path=relative_path,
-                    created_by=request.user
-                )
-                
-                print(f"✅ Version créée: v{version.version_number}")
-                
-                # ✅ 9. CALCULER LE HASH (automatique via le signal dans le modèle)
-                document.save()  # Déclenche le calcul du hash
-                
-            except Exception as file_error:
-                print(f"❌ Erreur sauvegarde fichier: {str(file_error)}")
-                # Nettoyer en cas d'erreur
-                document.delete()
-                return Response(
-                    {"error": f"Erreur lors de la sauvegarde du fichier: {str(file_error)}"}, 
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-            
-            # ✅ 10. RÉPONSE DE SUCCÈS
-            serializer = self.get_serializer(document)
-            response_data = serializer.data
-            
-            print(f"✅ === UPLOAD TERMINÉ AVEC SUCCÈS ===")
-            print(f"✅ Document ID: {document.id}")
-            
-            return Response(response_data, status=status.HTTP_201_CREATED)
-            
-        except Exception as e:
-            print(f"❌ === ERREUR GÉNÉRALE ===")
-            print(f"❌ Type d'erreur: {type(e).__name__}")
-            print(f"❌ Message: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            
-            return Response(
-                {"error": f"Erreur serveur inattendue: {str(e)}"}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        
+        serializer = self.get_serializer(documents, many=True)
+        return Response(serializer.data)
 
-    # ✅ MÉTHODE POUR TÉLÉCHARGER LA DERNIÈRE VERSION
-    @action(detail=True, methods=['get'])
-    def download_latest(self, request, pk=None):
-        """Télécharger la dernière version du document"""
+    @action(detail=False, methods=['GET'])
+    def recent(self, request):
+        """1.2 Recently Accessed - CORRIGÉ LE NOM"""
+        recent_accesses = DocumentAccess.objects.filter(
+            user=request.user
+        ).select_related('document').order_by('-accessed_at')[:50]
+        
+        documents = [access.document for access in recent_accesses if not access.document.is_deleted]
+        
+        # Si pas d'accès récents, retourner les documents récemment créés
+        if not documents:
+            seven_days_ago = timezone.now() - timedelta(days=7)
+            documents = Document.objects.filter(
+                created_at__gte=seven_days_ago,
+                is_deleted=False
+            ).order_by('-created_at')[:20]
+        
+        serializer = self.get_serializer(documents, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['GET'])
+    def created(self, request):
+        """1.3 Recently Created - CORRIGÉ LE NOM"""
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        documents = Document.objects.filter(
+            created_at__gte=thirty_days_ago,
+            is_deleted=False
+        ).order_by('-created_at')[:100]
+        
+        serializer = self.get_serializer(documents, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['GET'])
+    def favorites(self, request):
+        """1.4 Documents favoris"""
+        documents = Document.objects.filter(
+            is_favorite=True,
+            is_deleted=False
+        ).order_by('-created_at')
+        
+        serializer = self.get_serializer(documents, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['POST'])
+    def toggle_favorite(self, request, pk=None):
+        """Basculer le statut favori d'un document"""
         document = self.get_object()
+        document.is_favorite = not document.is_favorite
+        document.save()
+        
+        return Response({
+            'is_favorite': document.is_favorite,
+            'message': 'Ajouté aux favoris' if document.is_favorite else 'Retiré des favoris'
+        })
+
+    @action(detail=False, methods=['GET'])
+    def trash(self, request):
+        """1.5 Corbeille"""
+        documents = Document.objects.filter(
+            is_deleted=True
+        ).order_by('-deleted_at')
+        
+        serializer = self.get_serializer(documents, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['POST'])
+    def soft_delete(self, request, pk=None):
+        """Supprimer un document (soft delete)"""
+        document = self.get_object()
+        document.soft_delete(request.user)
+        
+        return Response({
+            'message': 'Document déplacé vers la corbeille',
+            'deleted_at': document.deleted_at
+        })
+
+    @action(detail=True, methods=['POST'])
+    def restore(self, request, pk=None):
+        """Restaurer un document depuis la corbeille"""
+        document = get_object_or_404(Document, pk=pk, is_deleted=True)
+        
+        if not document.can_be_restored:
+            return Response(
+                {'error': 'Ce document ne peut plus être restauré (> 30 jours)'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        document.restore_from_trash()
+        return Response({'message': 'Document restauré avec succès'})
+
+    @action(detail=True, methods=['GET'])
+    def download(self, request, pk=None):
+        """Télécharger la dernière version d'un document"""
+        document = self.get_object()
+        
+        # Marquer comme consulté
+        document.mark_as_accessed(request.user)
+        
         try:
             latest_version = document.versions.latest('version_number')
             file_path = os.path.join(settings.MEDIA_ROOT, latest_version.file_path)
@@ -226,42 +176,182 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 response = FileResponse(
                     open(file_path, 'rb'),
                     as_attachment=True,
-                    filename=os.path.basename(file_path)
+                    filename=document.original_filename or f"{document.title}.pdf"
                 )
                 return response
             else:
                 return Response(
-                    {"error": "Fichier non trouvé sur le disque"}, 
+                    {'error': 'Fichier introuvable'}, 
                     status=status.HTTP_404_NOT_FOUND
                 )
         except DocumentVersion.DoesNotExist:
             return Response(
-                {"error": "Aucune version trouvée pour ce document"}, 
+                {'error': 'Aucune version trouvée'}, 
                 status=status.HTTP_404_NOT_FOUND
             )
 
-# ✅ AJOUT DANS DocumentVersionViewSet
-class DocumentVersionViewSet(viewsets.ModelViewSet):
-    """API endpoint pour gérer les versions de documents"""
-    queryset = DocumentVersion.objects.all()
-    serializer_class = DocumentVersionSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-    @action(detail=True, methods=['get'])
-    def download(self, request, pk=None):
-        """✅ TÉLÉCHARGER UNE VERSION SPÉCIFIQUE"""
-        version = self.get_object()
-        file_path = os.path.join(settings.MEDIA_ROOT, version.file_path)
+    @action(detail=False, methods=['GET'])
+    def search(self, request):
+        """8.1-8.2 Recherche dans les documents"""
+        query = request.query_params.get('q', '')
         
-        if os.path.exists(file_path):
-            response = FileResponse(
-                open(file_path, 'rb'),
-                as_attachment=True,
-                filename=os.path.basename(file_path)
+        if not query:
+            return Response(
+                {'error': 'Paramètre de recherche requis'}, 
+                status=status.HTTP_400_BAD_REQUEST
             )
-            return response
         
+        # Recherche dans titre, description et contenu OCR
+        documents = Document.objects.filter(
+            Q(title__icontains=query) |
+            Q(description__icontains=query) |
+            Q(ocr_content__icontains=query),
+            is_deleted=False
+        )
+        
+        # Filtres avancés
+        category_id = request.query_params.get('category_id')
+        if category_id:
+            documents = documents.filter(category_id=category_id)
+        
+        date_from = request.query_params.get('date_from')
+        if date_from:
+            documents = documents.filter(created_at__gte=date_from)
+        
+        date_to = request.query_params.get('date_to')
+        if date_to:
+            documents = documents.filter(created_at__lte=date_to)
+        
+        serializer = self.get_serializer(documents, many=True)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        """1.7 Créer un nouveau document avec upload de fichier"""
+        try:
+            print(f"📥 Données reçues: {request.data}")
+            print(f"📁 Fichiers reçus: {request.FILES}")
+            
+            # Vérifier les données requises
+            if not request.data.get('title'):
+                return Response(
+                    {"error": "Le titre est requis"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if not request.data.get('category_id'):
+                return Response(
+                    {"error": "La catégorie est requise"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Vérifier que la catégorie existe
+            try:
+                category = Category.objects.get(id=request.data.get('category_id'))
+            except Category.DoesNotExist:
+                return Response(
+                    {"error": "Catégorie non trouvée"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Créer le document
+            document = Document.objects.create(
+                title=request.data.get('title'),
+                description=request.data.get('description', ''),
+                category=category,
+                status=request.data.get('status', 'DRAFT'),
+                creator=request.user
+            )
+            
+            print(f"✅ Document créé: {document.id}")
+            
+            # Gérer le fichier si présent
+            if 'file' in request.FILES:
+                file_obj = request.FILES['file']
+                print(f"📎 Traitement fichier: {file_obj.name} ({file_obj.size} bytes)")
+                
+                # Vérifier la taille du fichier (50MB max)
+                if file_obj.size > 50 * 1024 * 1024:
+                    document.delete()
+                    return Response(
+                        {"error": "Fichier trop volumineux (max 50MB)"}, 
+                        status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+                    )
+                
+                # Calcul du hash pour détection de doublons
+                file_obj.seek(0)
+                file_content = file_obj.read()
+                file_hash = hashlib.sha256(file_content).hexdigest()
+                file_obj.seek(0)
+                
+                # Créer le répertoire pour ce document
+                document_dir = os.path.join(settings.MEDIA_ROOT, 'documents', str(document.id))
+                os.makedirs(document_dir, exist_ok=True)
+                
+                # Générer le nom du fichier
+                file_ext = os.path.splitext(file_obj.name)[1]
+                safe_filename = f"document_{document.id}_v1{file_ext}"
+                file_path = os.path.join(document_dir, safe_filename)
+                relative_path = os.path.join('documents', str(document.id), safe_filename)
+                
+                # Sauvegarder le fichier
+                with open(file_path, 'wb+') as destination:
+                    for chunk in file_obj.chunks():
+                        destination.write(chunk)
+                
+                # Mettre à jour le document avec les infos du fichier
+                document.file_hash = file_hash
+                document.file_size = file_obj.size
+                document.mime_type = file_obj.content_type
+                document.original_filename = file_obj.name
+                document.save()
+                
+                # Créer la version du document
+                DocumentVersion.objects.create(
+                    document=document,
+                    version_number=1,
+                    file_path=relative_path,
+                    created_by=request.user
+                )
+                
+                print(f"💾 Fichier sauvegardé: {relative_path}")
+            
+            # Retourner la réponse
+            serializer = self.get_serializer(document)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            print(f"❌ Erreur lors de l'upload: {str(e)}")
+            return Response(
+                {"error": f"Erreur serveur: {str(e)}"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@api_view(['GET'])
+def dashboard_stats(request):
+    """Statistiques pour le dashboard"""
+    try:
+        stats = {
+            'total_documents': Document.objects.filter(is_deleted=False).count(),
+            'recent_documents': Document.objects.filter(
+                created_at__gte=timezone.now() - timedelta(days=7),
+                is_deleted=False
+            ).count(),
+            'favorites_count': Document.objects.filter(
+                is_favorite=True, 
+                is_deleted=False
+            ).count(),
+            'trash_count': Document.objects.filter(is_deleted=True).count(),
+            'total_users': User.objects.filter(is_active=True).count(),
+            'storage_used': Document.objects.aggregate(
+                total_size=Sum('file_size')
+            )['total_size'] or 0,
+        }
+        
+        return Response(stats)
+        
+    except Exception as e:
         return Response(
-            {"error": "Fichier non trouvé"},
-            status=status.HTTP_404_NOT_FOUND
+            {'error': str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

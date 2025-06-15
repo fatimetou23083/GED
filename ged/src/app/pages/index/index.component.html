@@ -1,0 +1,184 @@
+<!-- index.component.html -->
+<div class="space-y-8">
+  <!-- Message de bienvenue -->
+  <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+    <h2 class="text-2xl font-bold text-blue-900 mb-2">
+      Bienvenue dans la documentation du système GED
+    </h2>
+    <p class="text-blue-700">
+      Explorez les différents modules pour comprendre le fonctionnement du système.
+    </p>
+  </div>
+
+  <!-- Vue d'ensemble du système Mayan EDMS -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center space-x-3 mb-6">
+      <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+        <span class="text-blue-600 text-xl">🗄️</span>
+      </div>
+      <h2 class="text-xl font-bold text-gray-900">Vue d'ensemble du système Mayan EDMS</h2>
+    </div>
+
+    <!-- Grille des modules principaux -->
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <!-- Gestion des Documents -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+        <div class="flex items-center space-x-3 mb-4">
+          <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <span class="text-blue-600">📄</span>
+          </div>
+          <h3 class="font-semibold text-gray-900">Gestion des Documents</h3>
+        </div>
+        <p class="text-gray-600 text-sm mb-4">
+          Le module Documents est le cœur de Mayan EDMS. Il vous permet de gérer, organiser et accéder à tous vos fichiers de manière efficace et sécurisée.
+        </p>
+        <div class="grid grid-cols-1 gap-3">
+          <div class="bg-blue-50 rounded-lg p-3">
+            <div class="flex items-center space-x-2">
+              <span class="text-blue-600">📄</span>
+              <h4 class="font-medium text-blue-900">Voir tous les documents</h4>
+            </div>
+            <p class="text-blue-700 text-xs mt-1">
+              Accédez à l'ensemble de vos documents stockés dans le système avec une vue d'ensemble complète.
+            </p>
+          </div>
+          <div class="bg-blue-50 rounded-lg p-3">
+            <div class="flex items-center space-x-2">
+              <span class="text-blue-600">🕒</span>
+              <h4 class="font-medium text-blue-900">Accès récents</h4>
+            </div>
+            <p class="text-blue-700 text-xs mt-1">
+              Retrouvez rapidement les documents consultés récemment pour un accès rapide à vos fichiers de travail.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cabinets (Classeurs) -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+        <div class="flex items-center space-x-3 mb-4">
+          <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+            <span class="text-green-600">🗄️</span>
+          </div>
+          <h3 class="font-semibold text-gray-900">Cabinets (Classeurs)</h3>
+        </div>
+        <p class="text-gray-600 text-sm mb-4">
+          Les cabinets vous permettent d'organiser vos documents dans une structure hiérarchique logique, comme des dossiers physiques dans un classeur traditionnel.
+        </p>
+        <div class="space-y-3">
+          <div class="bg-green-50 rounded-lg p-3">
+            <div class="flex items-center space-x-2">
+              <span class="text-green-600">🌳</span>
+              <h4 class="font-medium text-green-900">Organisation hiérarchique</h4>
+            </div>
+            <p class="text-green-700 text-xs mt-1">
+              Créez une structure arborescente pour classer vos documents par projet, département, ou toute autre logique métier.
+            </p>
+            <div class="mt-2 p-2 bg-green-100 rounded text-xs text-green-800">
+              <strong>Exemple :</strong> Entreprise → Ressources Humaines → Contrats → 2024
+            </div>
+          </div>
+          <div class="bg-green-50 rounded-lg p-3">
+            <div class="flex items-center space-x-2">
+              <span class="text-green-600">📋</span>
+              <h4 class="font-medium text-green-900">Bonnes Pratiques</h4>
+            </div>
+            <ul class="text-green-700 text-xs mt-1 space-y-1">
+              <li>• Définissez une nomenclature claire avant de créer vos cabinets</li>
+              <li>• Limitez la profondeur hiérarchique à 4-5 niveaux maximum</li>
+              <li>• Utilisez des noms de cabinets explicites et standardisés</li>
+              <li>• Révisez régulièrement votre structure pour maintenir l'efficacité</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gestion des Métadonnées -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+        <div class="flex items-center space-x-3 mb-4">
+          <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+            <span class="text-purple-600">🏷️</span>
+          </div>
+          <h3 class="font-semibold text-gray-900">Gestion des Métadonnées</h3>
+        </div>
+        <p class="text-gray-600 text-sm mb-4">
+          Les métadonnées enrichissent vos documents avec des informations structurées, facilitant leur classification, recherche et gestion automatisée.
+        </p>
+        <div class="grid grid-cols-1 gap-3">
+          <div class="bg-purple-50 rounded-lg p-3">
+            <div class="flex items-center space-x-2">
+              <span class="text-purple-600">➕</span>
+              <h4 class="font-medium text-purple-900">Création de types</h4>
+            </div>
+            <p class="text-purple-700 text-xs mt-1">
+              Définissez les différents types de métadonnées selon vos besoins métier (Matière, Année, Auteur, etc.)
+            </p>
+          </div>
+          <div class="bg-purple-50 rounded-lg p-3">
+            <div class="flex items-center space-x-2">
+              <span class="text-purple-600">🔗</span>
+              <h4 class="font-medium text-purple-900">Association aux types</h4>
+            </div>
+            <p class="text-purple-700 text-xs mt-1">
+              Liez les métadonnées aux types de documents pour une saisie automatique et cohérente
+            </p>
+          </div>
+          <div class="bg-purple-50 rounded-lg p-3">
+            <div class="flex items-center space-x-2">
+              <span class="text-purple-600">📊</span>
+              <h4 class="font-medium text-purple-900">Valeurs personnalisées</h4>
+            </div>
+            <p class="text-purple-700 text-xs mt-1">
+              Ajoutez des valeurs spécifiques à votre organisation pour une classification sur mesure
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ordre de mise en œuvre recommandé -->
+    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+      <h3 class="text-xl font-semibold text-blue-900 mb-4 flex items-center space-x-2">
+        <span>🚀</span>
+        <span>Ordre de Mise en Œuvre Recommandé</span>
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="text-center">
+          <div class="bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3 font-bold">
+            1
+          </div>
+          <h4 class="font-semibold text-blue-900 mb-2">Documents</h4>
+          <p class="text-xs text-blue-700">Gestion centrale des fichiers</p>
+        </div>
+        <div class="text-center">
+          <div class="bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3 font-bold">
+            2
+          </div>
+          <h4 class="font-semibold text-blue-900 mb-2">Cabinets</h4>
+          <p class="text-xs text-blue-700">Organisation hiérarchique</p>
+        </div>
+        <div class="text-center">
+          <div class="bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3 font-bold">
+            3
+          </div>
+          <h4 class="font-semibold text-blue-900 mb-2">Métadonnées</h4>
+          <p class="text-xs text-blue-700">Types et champs personnalisés</p>
+        </div>
+        <div class="text-center">
+          <div class="bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3 font-bold">
+            4
+          </div>
+          <h4 class="font-semibold text-blue-900 mb-2">Permissions</h4>
+          <p class="text-xs text-blue-700">Contrôle d'accès granulaire</p>
+        </div>
+        <div class="text-center">
+          <div class="bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3 font-bold">
+            5
+          </div>
+          <h4 class="font-semibold text-blue-900 mb-2">Workflows</h4>
+          <p class="text-xs text-blue-700">Automatisation des processus</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

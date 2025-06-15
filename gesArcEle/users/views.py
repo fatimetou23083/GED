@@ -119,10 +119,13 @@ class UserViewSet(viewsets.ModelViewSet):
         
         serializer = UserWithProfileSerializer(user)
         return Response(serializer.data)
-
+    
     @action(detail=False, methods=['post'])
     def login(self, request):
         """Connexion avec email + mot de passe"""
+        # IMPORTANT: Permettre l'accès sans authentification
+        self.permission_classes = [permissions.AllowAny]
+        
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data['email']
@@ -131,10 +134,15 @@ class UserViewSet(viewsets.ModelViewSet):
             try:
                 user_obj = User.objects.get(email=email)
             except User.DoesNotExist:
-                return Response({'error': 'Email invalide'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response(
+                    {'error': 'Email invalide'}, 
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
 
-            user = authenticate(username=user_obj.username, password=password)
-            if user:
+            # CORRECTION: Ajouter 'request' comme premier paramètre
+            user = authenticate(request, username=user_obj.username, password=password)
+            
+            if user and user.is_active:
                 token, created = Token.objects.get_or_create(user=user)
                 return Response({
                     'token': token.key,
@@ -144,7 +152,11 @@ class UserViewSet(viewsets.ModelViewSet):
                     'first_name': user.first_name,
                     'last_name': user.last_name
                 })
-            return Response({'error': 'Mot de passe incorrect'}, status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                return Response(
+                    {'error': 'Mot de passe incorrect ou compte inactif'}, 
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     

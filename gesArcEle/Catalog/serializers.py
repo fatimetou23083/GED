@@ -1,3 +1,4 @@
+# Catalog/serializers.py - VERSION COMPLÈTE
 from rest_framework import serializers
 from .models import Category
 
@@ -9,19 +10,22 @@ class CategorySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Category
-        fields = ['id', 'name', 'description', 'parent_id', 'parent_name', 
+        fields = ['id', 'name', 'description', 'parent', 'parent_name', 
                  'document_count', 'has_children']
         read_only_fields = ['id', 'parent_name', 'document_count', 'has_children']
     
     def get_parent_name(self, obj):
-        return obj.parent_id.name if obj.parent_id else ""
+        return obj.parent.name if obj.parent else ""
     
     def get_document_count(self, obj):
-        from documents.models import Document
-        return Document.objects.filter(category_id=obj.id).count()
+        try:
+            from documents.models import Document
+            return Document.objects.filter(category=obj).count()
+        except ImportError:
+            return 0
     
     def get_has_children(self, obj):
-        return Category.objects.filter(parent_id=obj.id).exists()
+        return Category.objects.filter(parent=obj).exists()
 
 class RecursiveCategoryField(serializers.Serializer):
     """Champ récursif pour l'arborescence des catégories"""
@@ -37,6 +41,6 @@ class CategoryTreeSerializer(CategorySerializer):
         fields = CategorySerializer.Meta.fields + ['children']
     
     def get_children(self, obj):
-        children = Category.objects.filter(parent_id=obj.id)
+        children = Category.objects.filter(parent=obj)
         serializer = CategoryTreeSerializer(children, many=True, context=self.context)
         return serializer.data
