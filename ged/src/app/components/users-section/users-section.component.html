@@ -1,0 +1,161 @@
+<!-- src/app/components/users-section/users-section.component.html -->
+<div class="users-section">
+  <div class="section-header">
+    <h2>Gestion des Utilisateurs</h2>
+    <button class="btn btn-primary" (click)="showAddUserForm()" [disabled]="loading">
+      <i class="icon">+</i> Ajouter un utilisateur
+    </button>
+  </div>
+
+  <!-- Messages d'erreur -->
+  <div *ngIf="error" class="alert alert-error">
+    {{ error }}
+  </div>
+
+  <!-- Indicateur de chargement -->
+  <div *ngIf="loading" class="loading">
+    Chargement en cours...
+  </div>
+
+  <div class="users-container">
+    <!-- Liste des utilisateurs -->
+    <div class="users-list">
+      <h3>Liste des utilisateurs ({{ users.length }})</h3>
+      
+      <div *ngIf="users.length === 0 && !loading" class="no-data">
+        Aucun utilisateur trouvé
+      </div>
+
+      <div class="user-item" 
+           *ngFor="let user of users" 
+           [class.selected]="selectedUser?.id === user.id"
+           (click)="selectUser(user)">
+        <div class="user-info">
+          <div class="user-name">{{ user.first_name }} {{ user.last_name }}</div>
+          <div class="user-details">
+            <span class="username">{{ user.username }}</span>
+            <span class="email">{{ user.email }}</span>
+          </div>
+        </div>
+        <div class="user-actions">
+          <button class="btn btn-danger btn-sm" 
+                  (click)="deleteUser(user); $event.stopPropagation()"
+                  [disabled]="loading">
+            Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulaire d'ajout -->
+    <div *ngIf="showAddForm" class="user-form">
+      <h3>Ajouter un nouvel utilisateur</h3>
+      <form (ngSubmit)="addUser()">
+        <div class="form-group">
+          <label for="username">Nom d'utilisateur *</label>
+          <input type="text" 
+                 id="username" 
+                 [(ngModel)]="newUser.username" 
+                 name="username" 
+                 required
+                 placeholder="nom_utilisateur">
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email *</label>
+          <input type="email" 
+                 id="email" 
+                 [(ngModel)]="newUser.email" 
+                 name="email" 
+                 required
+                 placeholder="user@example.com">
+        </div>
+
+        <div class="form-group">
+          <label for="first_name">Prénom</label>
+          <input type="text" 
+                 id="first_name" 
+                 [(ngModel)]="newUser.first_name" 
+                 name="first_name"
+                 placeholder="Prénom">
+        </div>
+
+        <div class="form-group">
+          <label for="last_name">Nom</label>
+          <input type="text" 
+                 id="last_name" 
+                 [(ngModel)]="newUser.last_name" 
+                 name="last_name"
+                 placeholder="Nom de famille">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <input type="password" 
+                 id="password" 
+                 [(ngModel)]="newUser.password" 
+                 name="password"
+                 placeholder="Mot de passe">
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="loading">
+            Ajouter
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="cancelEdit()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Formulaire de modification -->
+    <div *ngIf="selectedUser && !showAddForm" class="user-form">
+      <h3>Modifier l'utilisateur</h3>
+      <form (ngSubmit)="updateUser()">
+        <div class="form-group">
+          <label for="edit_username">Nom d'utilisateur</label>
+          <input type="text" 
+                 id="edit_username" 
+                 [(ngModel)]="selectedUser.username" 
+                 name="edit_username" 
+                 required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_email">Email</label>
+          <input type="email" 
+                 id="edit_email" 
+                 [(ngModel)]="selectedUser.email" 
+                 name="edit_email" 
+                 required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_first_name">Prénom</label>
+          <input type="text" 
+                 id="edit_first_name" 
+                 [(ngModel)]="selectedUser.first_name" 
+                 name="edit_first_name">
+        </div>
+
+        <div class="form-group">
+          <label for="edit_last_name">Nom</label>
+          <input type="text" 
+                 id="edit_last_name" 
+                 [(ngModel)]="selectedUser.last_name" 
+                 name="edit_last_name">
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="loading">
+            Mettre à jour
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="cancelEdit()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

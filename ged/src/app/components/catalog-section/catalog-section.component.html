@@ -1,0 +1,182 @@
+<!-- src/app/components/catalog-section/catalog-section.component.html -->
+<div class="catalog-section">
+  <div class="section-header">
+    <h2>Gestion du Catalogue</h2>
+    <button class="btn btn-primary" (click)="showAddCategoryForm()" [disabled]="loading">
+      <i class="icon">+</i> Ajouter une catégorie
+    </button>
+  </div>
+
+  <!-- Messages d'erreur -->
+  <div *ngIf="error" class="alert alert-error">
+    {{ error }}
+  </div>
+
+  <!-- Indicateur de chargement -->
+  <div *ngIf="loading" class="loading">
+    Chargement en cours...
+  </div>
+
+  <div class="catalog-container">
+    <!-- Arbre des catégories -->
+    <div class="categories-tree">
+      <h3>Catégories ({{ categories.length }})</h3>
+      
+      <div *ngIf="categories.length === 0 && !loading" class="no-data">
+        Aucune catégorie trouvée
+      </div>
+
+      <!-- Catégories racines -->
+      <div class="category-tree">
+        <div *ngFor="let category of rootCategories" class="category-node">
+          <div class="category-item root-category" 
+               [class.selected]="selectedCategory?.id === category.id"
+               (click)="selectCategory(category)">
+            <div class="category-info">
+              <div class="category-name">
+                <i class="icon">📁</i> {{ category.name }}
+              </div>
+              <div class="category-description">{{ category.description || 'Aucune description' }}</div>
+              <div class="category-meta">
+                <span class="subcategory-count">
+                  {{ getSubcategories(category.id).length }} sous-catégorie(s)
+                </span>
+              </div>
+            </div>
+            <div class="category-actions">
+              <button class="btn btn-danger btn-sm" 
+                      (click)="deleteCategory(category); $event.stopPropagation()"
+                      [disabled]="loading">
+                Supprimer
+              </button>
+            </div>
+          </div>
+
+          <!-- Sous-catégories -->
+          <div class="subcategories" *ngIf="getSubcategories(category.id).length > 0">
+            <div *ngFor="let subcategory of getSubcategories(category.id)" 
+                 class="category-item subcategory"
+                 [class.selected]="selectedCategory?.id === subcategory.id"
+                 (click)="selectCategory(subcategory)">
+              <div class="category-info">
+                <div class="category-name">
+                  <i class="icon">📄</i> {{ subcategory.name }}
+                </div>
+                <div class="category-description">{{ subcategory.description || 'Aucune description' }}</div>
+                <div class="category-parent">Parent: {{ getParentName(subcategory.parent_id) }}</div>
+              </div>
+              <div class="category-actions">
+                <button class="btn btn-danger btn-sm" 
+                        (click)="deleteCategory(subcategory); $event.stopPropagation()"
+                        [disabled]="loading">
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulaire d'ajout -->
+    <div *ngIf="showAddForm" class="category-form">
+      <h3>Ajouter une nouvelle catégorie</h3>
+      <form (ngSubmit)="addCategory()">
+        <div class="form-group">
+          <label for="name">Nom de la catégorie *</label>
+          <input type="text" 
+                 id="name" 
+                 [(ngModel)]="newCategory.name" 
+                 name="name" 
+                 required
+                 placeholder="Nom de la catégorie">
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" 
+                   [(ngModel)]="newCategory.description" 
+                   name="description"
+                   rows="3"
+                   placeholder="Description de la catégorie"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="parent_id">Catégorie parente</label>
+          <select id="parent_id" 
+                  [(ngModel)]="newCategory.parent_id" 
+                  name="parent_id">
+            <option [value]="null">Aucun parent (catégorie racine)</option>
+            <option *ngFor="let category of categories" [value]="category.id">
+              {{ category.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="loading">
+            Ajouter
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="cancelEdit()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Formulaire de modification -->
+    <div *ngIf="selectedCategory && !showAddForm" class="category-form">
+      <h3>Modifier la catégorie</h3>
+      <form (ngSubmit)="updateCategory()">
+        <div class="form-group">
+          <label for="edit_name">Nom de la catégorie</label>
+          <input type="text" 
+                 id="edit_name" 
+                 [(ngModel)]="selectedCategory.name" 
+                 name="edit_name" 
+                 required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_description">Description</label>
+          <textarea id="edit_description" 
+                   [(ngModel)]="selectedCategory.description" 
+                   name="edit_description"
+                   rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_parent_id">Catégorie parente</label>
+          <select id="edit_parent_id" 
+                  [(ngModel)]="selectedCategory.parent_id" 
+                  name="edit_parent_id">
+            <option [value]="null">Aucun parent (catégorie racine)</option>
+            <option *ngFor="let category of categories" 
+                    [value]="category.id"
+                    [disabled]="category.id === selectedCategory.id">
+              {{ category.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Informations</label>
+          <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; font-size: 14px;">
+            <div><strong>ID:</strong> {{ selectedCategory.id }}</div>
+            <div><strong>Sous-catégories:</strong> {{ getSubcategories(selectedCategory.id).length }}</div>
+            <div><strong>Parent:</strong> {{ getParentName(selectedCategory.parent_id) }}</div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="loading">
+            Mettre à jour
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="cancelEdit()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

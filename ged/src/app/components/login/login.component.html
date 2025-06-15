@@ -1,0 +1,50 @@
+<!-- src/app/components/login/login.component.html -->
+<div class="login-container">
+  <div class="login-form">
+    <div class="login-header">
+      <h2>Connexion à GED</h2>
+      <p>Accédez à votre système de gestion électronique de documents</p>
+    </div>
+    
+    <div *ngIf="error" class="alert alert-error">
+      {{ error }}
+    </div>
+
+    <form (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="username">Email</label>
+        <input type="email" 
+               id="username" 
+               [(ngModel)]="username" 
+               name="username" 
+               required
+               placeholder="admin@gmail.com"
+               [disabled]="loading"
+               autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input type="password" 
+               id="password" 
+               [(ngModel)]="password" 
+               name="password" 
+               required
+               placeholder="Votre mot de passe"
+               [disabled]="loading"
+               autocomplete="current-password">
+      </div>
+
+      <button type="submit" 
+              class="btn btn-primary btn-login" 
+              [disabled]="loading || !username || !password">
+        <span *ngIf="loading">Connexion en cours...</span>
+        <span *ngIf="!loading">Se connecter</span>
+      </button>
+    </form>
+
+    <div class="login-footer">
+      <p>Utilisez vos identifiants Django existants</p>
+    </div>
+  </div>
+</div>
