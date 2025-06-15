@@ -1,3 +1,11 @@
-* text=auto eol=lf
-*.{cmd,bat} text eol=crlf
-*.{png,jpg,jpeg,gif,zip} binary
+# Normaliser les fins de ligne sur LF pour tout
+* text=auto
+
+# Forcer LF pour les fichiers texte
+*.ts text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
